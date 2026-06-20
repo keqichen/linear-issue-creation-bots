@@ -123,7 +123,8 @@ app.use(express.json({
 app.post("/notion-webhook", async (req, res) => {
   if (!verifySignature(req)) return res.status(401).send("Invalid signature");
 
-  // Notion sends a verification challenge on first registration.
+  // Notion sends a verification_token on first registration.
+  if (req.body.verification_token) return res.sendStatus(200);
   if (req.body.type === "url_verification") {
     return res.json({ challenge: req.body.challenge });
   }
