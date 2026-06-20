@@ -64,10 +64,27 @@ npx ngrok http 3000
 
 Then update the Notion webhook URL to the ngrok `https` URL.
 
-## Deploy to Railway
+## Deploy to Fly.io (free)
 
-1. Push this repo to GitHub
-2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub repo
-3. Add all `.env` variables in the Railway dashboard under **Variables**
-4. Railway will run `npm start` automatically
-5. Once deployed, update the Notion webhook URL to your Railway public URL
+1. Install the Fly CLI:
+   ```bash
+   winget install flyctl
+   ```
+
+2. Login and initialise the app from the project folder:
+   ```bash
+   flyctl auth login
+   flyctl launch
+   ```
+
+3. Set environment variables:
+   ```bash
+   flyctl secrets set DISCORD_TOKEN=... ANTHROPIC_API_KEY=... LINEAR_API_KEY=... LINEAR_TEAM_ID=... NOTION_TOKEN=... NOTION_SIGNING_SECRET=...
+   ```
+
+4. Deploy:
+   ```bash
+   flyctl deploy
+   ```
+
+Your app gets a public URL like `https://your-app-name.fly.dev`. Update the Notion webhook to `https://your-app-name.fly.dev/notion-webhook`.
