@@ -138,7 +138,8 @@ Return JSON only, no markdown fences:
 
 // ── Linear issue creation ────────────────────────────────────────
 export async function createIssue(draft, src, author, timestamp) {
-  const resolvedAssignee = TEAM[draft.assignee] ? draft.assignee : "Lee";
+  const matched = Object.keys(TEAM).find((k) => k.toLowerCase() === (draft.assignee ?? "").toLowerCase());
+  const resolvedAssignee = matched ?? "Lee";
   const assigneeId = TEAM[resolvedAssignee].linearId;
   const labelIds = (draft.labels ?? []).map((name) => LABEL_MAP[name]).filter(Boolean);
   const description = buildDescription(draft.context || "", draft.acs || [], src, author, resolvedAssignee, timestamp);
@@ -160,5 +161,5 @@ export async function createIssue(draft, src, author, timestamp) {
 
   const out = await linearPost(query, { input });
   if (out.errors) throw new Error(JSON.stringify(out.errors));
-  return out.data.issueCreate.issue;
+  return { ...out.data.issueCreate.issue, resolvedAssignee };
 }

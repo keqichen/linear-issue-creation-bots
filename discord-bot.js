@@ -87,7 +87,7 @@ async function handle(text, author, msg, context = "") {
     const issue = await createIssue(draft, text, author, msg.createdAt);
     await msg.reply(
       `📌 Created **${issue.identifier}** — ${draft.title}\n` +
-      `Priority: ${draft.priority} · Owner: ${draft.assignee || "unassigned"}\n${issue.url}`
+      `Priority: ${draft.priority} · Owner: ${issue.resolvedAssignee || "unassigned"}\n${issue.url}`
     );
   } catch (e) {
     console.error("pipeline error:", e);
