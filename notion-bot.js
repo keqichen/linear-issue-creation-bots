@@ -64,7 +64,7 @@ async function replyIssueLink(discussionId, issue, draft) {
     rich_text: [
       { type: "text", text: { content: "📌 Created " } },
       { type: "text", text: { content: `${issue.identifier} — ${draft.title}`, link: { url: issue.url } } },
-      { type: "text", text: { content: `\nPriority: ${draft.priority} · Owner: ${issue.resolvedAssignee || "unassigned"}` } },
+      { type: "text", text: { content: `\nPriority: ${draft.priority} · Owner: ${issue.resolvedAssignee || "unassigned"}${draft.deadline ? ` · Due: ${draft.deadline}` : ""}` } },
     ],
   });
 }

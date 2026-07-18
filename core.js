@@ -81,8 +81,11 @@ export async function triage(text, author, context = "") {
   const team = Object.entries(TEAM).map(([n, v]) => `- ${n}: ${v.owns}`).join("\n");
   const contextBlock = context ? `\nConversation context (most recent last):\n${context}\n` : "";
   const labelList = Object.keys(LABEL_MAP).join(", ") || "none";
+  const today = new Date().toISOString().slice(0, 10);
 
   const prompt = `You triage chat messages for a small game-dev team and draft Linear issues.
+
+Today's date: ${today}
 
 Team and what they own:
 ${team}
@@ -112,9 +115,10 @@ Then produce:
 - priority: high/med/low
 - assignee: named person if mentioned, else infer from who owns the relevant area, else null
 - labels: array of label names from the available list that best fit. Empty array if none fit.
+- deadline: if the message contains deadline language ("by [date]", "due [date]", "expected by", "needs to be done by", "finish by", etc.), resolve it to an absolute YYYY-MM-DD date using today as the reference. Otherwise null. Examples: "by Friday" → next Friday's date, "by end of month" → last day of current month, "by March 15" → nearest March 15.
 
 Return JSON only, no markdown fences:
-{"tag":"work|idea|chat","type":"design|dev|art|other","title":"...","context":"...","acs":["..."],"priority":"high|med|low","assignee":"name or null","labels":[]}`;
+{"tag":"work|idea|chat","type":"design|dev|art|other","title":"...","context":"...","acs":["..."],"priority":"high|med|low","assignee":"name or null","labels":[],"deadline":"YYYY-MM-DD or null"}`;
 
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -156,6 +160,7 @@ export async function createIssue(draft, src, author, timestamp) {
     ...(assigneeId && !assigneeId.includes("_") ? { assigneeId } : {}),
     ...(ENDLESS_SUMMER_ID ? { projectId: ENDLESS_SUMMER_ID } : {}),
     ...(labelIds.length ? { labelIds } : {}),
+    ...(draft.deadline ? { dueDate: draft.deadline } : {}),
     stateId: "5800d11a-0d62-4905-b761-46a895feaaea",
   };
 

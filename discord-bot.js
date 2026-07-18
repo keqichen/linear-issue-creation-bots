@@ -7,6 +7,7 @@
 import "dotenv/config";
 import { Client, GatewayIntentBits, Partials, Events } from "discord.js";
 import { initCore, triage, createIssue } from "./core.js";
+import { startDeadlineReminders } from "./reminders.js";
 
 const { DISCORD_TOKEN } = process.env;
 const TRIGGER_EMOJI = "📌";
@@ -24,6 +25,7 @@ const client = new Client({
 client.once(Events.ClientReady, async (c) => {
   const summary = await initCore();
   console.log(`Discord bot online as ${c.user.tag}. ${summary}`);
+  startDeadlineReminders(client);
 });
 
 // ── Fetch surrounding context for a message ──────────────────────
@@ -85,9 +87,10 @@ async function handle(text, author, msg, context = "") {
       return;
     }
     const issue = await createIssue(draft, text, author, msg.createdAt);
+    const deadlinePart = draft.deadline ? ` · Due: ${draft.deadline}` : "";
     await msg.reply(
       `📌 Created **${issue.identifier}** — ${draft.title}\n` +
-      `Priority: ${draft.priority} · Owner: ${issue.resolvedAssignee || "unassigned"}\n${issue.url}`
+      `Priority: ${draft.priority} · Owner: ${issue.resolvedAssignee || "unassigned"}${deadlinePart}\n${issue.url}`
     );
   } catch (e) {
     console.error("pipeline error:", e);
