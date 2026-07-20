@@ -12,6 +12,24 @@ export const TEAM = {
 
 const PRIORITY_MAP = { high: 2, med: 3, low: 4 };
 
+const BOT_TIMEZONE = "Europe/London";
+
+// Calendar date (YYYY-MM-DD) for the given instant, in BOT_TIMEZONE — not UTC,
+// so it matches the date the team actually sees on their clocks.
+export function londonDateString(date = new Date()) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: BOT_TIMEZONE,
+      year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(date).map((p) => [p.type, p.value])
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function londonWeekday(date = new Date()) {
+  return new Intl.DateTimeFormat("en-US", { timeZone: BOT_TIMEZONE, weekday: "long" }).format(date);
+}
+
 const LEE_REGRESSION = [
   "- [ ] I can progress a dialogue and choose an option by mouse.",
   "- [ ] I can progress a dialogue and choose an option by keyboard.",
@@ -81,11 +99,12 @@ export async function triage(text, author, context = "") {
   const team = Object.entries(TEAM).map(([n, v]) => `- ${n}: ${v.owns}`).join("\n");
   const contextBlock = context ? `\nConversation context (most recent last):\n${context}\n` : "";
   const labelList = Object.keys(LABEL_MAP).join(", ") || "none";
-  const today = new Date().toISOString().slice(0, 10);
+  const today = londonDateString();
+  const todayWeekday = londonWeekday();
 
   const prompt = `You triage chat messages for a small game-dev team and draft Linear issues.
 
-Today's date: ${today}
+Today's date: ${today} (${todayWeekday})
 
 Team and what they own:
 ${team}

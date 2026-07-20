@@ -1,22 +1,28 @@
 // ── Daily deadline reminders ─────────────────────────────────────
-// Runs at 9am (server local time) every day. Finds Linear issues due
-// tomorrow and posts them to the "reminders" Discord channel.
-import { linearPost } from "./core.js";
+// Runs at 9am UK time every day. Finds Linear issues due tomorrow (UK
+// calendar day) and posts them to the "reminders" Discord channel.
+import { linearPost, londonDateString } from "./core.js";
 
 const { LINEAR_TEAM_ID } = process.env;
 
+// Ms until the wall clock next reads 09:00 in Europe/London, regardless of
+// what timezone the server itself is running in (Fly.io defaults to UTC).
 function msUntilNext9am() {
   const now = new Date();
-  const next = new Date(now);
-  next.setHours(9, 0, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  return next - now;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/London",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    }).formatToParts(now).map((p) => [p.type, p.value])
+  );
+  const secondsSinceMidnight = (+parts.hour) * 3600 + (+parts.minute) * 60 + (+parts.second);
+  let diffSeconds = 9 * 3600 - secondsSinceMidnight;
+  if (diffSeconds <= 0) diffSeconds += 24 * 3600;
+  return diffSeconds * 1000;
 }
 
 async function checkDeadlines(client) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const dueDate = tomorrow.toISOString().slice(0, 10);
+  const dueDate = londonDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
   const out = await linearPost(
     `query($filter: IssueFilter) {
@@ -24,7 +30,13 @@ async function checkDeadlines(client) {
         nodes { identifier title url assignee { name } }
       }
     }`,
-    { filter: { dueDate: { eq: dueDate }, team: { id: { eq: LINEAR_TEAM_ID } } } }
+    {
+      filter: {
+        dueDate: { eq: dueDate },
+        team: { id: { eq: LINEAR_TEAM_ID } },
+        state: { type: { nin: ["completed", "canceled"] } },
+      },
+    }
   );
 
   const issues = out.data?.issues?.nodes ?? [];
