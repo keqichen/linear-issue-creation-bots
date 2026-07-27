@@ -30,6 +30,17 @@ export function londonWeekday(date = new Date()) {
   return new Intl.DateTimeFormat("en-US", { timeZone: BOT_TIMEZONE, weekday: "long" }).format(date);
 }
 
+// Explicit date/weekday lookup table for the next N days, so deadline
+// resolution is a lookup rather than arithmetic the model has to get right.
+function upcomingDatesTable(days = 14) {
+  const lines = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(Date.now() + i * 24 * 60 * 60 * 1000);
+    lines.push(`${londonWeekday(d)} ${londonDateString(d)}`);
+  }
+  return lines.join("\n");
+}
+
 const LEE_REGRESSION = [
   "- [ ] I can progress a dialogue and choose an option by mouse.",
   "- [ ] I can progress a dialogue and choose an option by keyboard.",
@@ -101,10 +112,14 @@ export async function triage(text, author, context = "") {
   const labelList = Object.keys(LABEL_MAP).join(", ") || "none";
   const today = londonDateString();
   const todayWeekday = londonWeekday();
+  const datesTable = upcomingDatesTable();
 
   const prompt = `You triage chat messages for a small game-dev team and draft Linear issues.
 
 Today's date: ${today} (${todayWeekday})
+
+Upcoming dates (use this table to resolve weekday references — do not compute weekday math yourself):
+${datesTable}
 
 Team and what they own:
 ${team}
@@ -134,7 +149,7 @@ Then produce:
 - priority: high/med/low
 - assignee: named person if mentioned, else infer from who owns the relevant area, else null
 - labels: array of label names from the available list that best fit. Empty array if none fit.
-- deadline: if the message contains deadline language ("by [date]", "due [date]", "expected by", "needs to be done by", "finish by", etc.), resolve it to an absolute YYYY-MM-DD date using today as the reference. Otherwise null. Examples: "by Friday" → next Friday's date, "by end of month" → last day of current month, "by March 15" → nearest March 15.
+- deadline: if the message contains deadline language ("by [date]", "due [date]", "expected by", "needs to be done by", "finish by", etc.), resolve it to an absolute YYYY-MM-DD date by looking it up in the "Upcoming dates" table above. Otherwise null. Examples: "by Thursday" / "this Thursday" → the date next to "Thursday" in the table, "by end of month" → last day of current month, "by March 15" → nearest March 15.
 
 Return JSON only, no markdown fences:
 {"tag":"work|idea|chat","type":"design|dev|art|other","title":"...","context":"...","acs":["..."],"priority":"high|med|low","assignee":"name or null","labels":[],"deadline":"YYYY-MM-DD or null"}`;
