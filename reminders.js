@@ -1,5 +1,5 @@
 // ── Daily deadline reminders ─────────────────────────────────────
-// Runs at 9am UK time every day. Finds Linear issues due tomorrow (UK
+// Runs at 9am UK time every day. Finds Linear issues due in 2 days (UK
 // calendar day) and posts them to the "reminders" Discord channel.
 import { linearPost, londonDateString } from "./core.js";
 
@@ -22,7 +22,7 @@ function msUntilNext9am() {
 }
 
 async function checkDeadlines(client) {
-  const dueDate = londonDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  const dueDate = londonDateString(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000));
 
   const out = await linearPost(
     `query($filter: IssueFilter) {
@@ -51,7 +51,7 @@ async function checkDeadlines(client) {
   const lines = issues.map(
     (i) => `📅 **${i.identifier}** — ${i.title}  ·  ${i.assignee?.name ?? "unassigned"}\n${i.url}`
   );
-  await channel.send(`⏰ **Due tomorrow (${dueDate})**\n\n${lines.join("\n\n")}`);
+  await channel.send(`⏰ **Due in 2 days (${dueDate})**\n\n${lines.join("\n\n")}`);
 }
 
 export function startDeadlineReminders(client) {
